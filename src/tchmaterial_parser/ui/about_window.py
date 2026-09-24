@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # 关于窗口：展示程序、作者、项目地址与许可证信息
 
+from __future__ import annotations
 import tkinter as tk
 from tkinter import messagebox, ttk
 import webbrowser
@@ -13,9 +14,13 @@ from . import runtime, theme
 from .runtime import scaled
 from .widgets import center_window
 
-PROJECT_URL = "https://github.com/happycola233/tchMaterial-parser"
-LICENSE_URL = "https://github.com/happycola233/tchMaterial-parser/blob/main/LICENSE"
+UPSTREAM_URL = "https://github.com/happycola233/tchMaterial-parser"
+FORK_URL = "https://github.com/Minecraftgoose/tchMaterial-parser-for-Windows7"
+LICENSE_URL = "https://github.com/Minecraftgoose/tchMaterial-parser-for-Windows7/blob/main/LICENSE"
 FLUENT_EMOJI_LICENSE_URL = "https://github.com/microsoft/fluentui-emoji/blob/main/LICENSE"
+
+OLD = "tchMaterial-parser" # 上游项目名
+NEW = "tchMaterial-parser-for-Windows7" # 本分支项目名
 
 def open_url(url: str, parent: tk.Toplevel) -> None: # 使用系统默认浏览器打开链接，并在失败时向用户给出明确提示
     try:
@@ -98,20 +103,34 @@ def show_about_window() -> None: # 打开关于窗口
     make_link(author_frame, "肥宅水水呀", "https://github.com/happycola233", about_window).pack(side="left")
     ttk.Label(author_frame, text="、", style="AboutCard.TLabel").pack(side="left")
     make_link(author_frame, "晨叶梦春", "https://github.com/wuziqian211", about_window).pack(side="left")
-    ttk.Label(author_frame, text="及其他贡献者", style="AboutCard.TLabel").pack(side="left")
+    ttk.Label(author_frame, text="及上游其他贡献者", style="AboutCard.TLabel").pack(side="left")
     author_frame.grid(row=0, column=1, sticky="nw")
 
-    ttk.Label(info_card, text="仓库", style="AboutCardMuted.TLabel").grid(
+    ttk.Label(info_card, text="Win7 分支", style="AboutCardMuted.TLabel").grid(
         row=1, column=0, sticky="nw", padx=(0, scaled(16)), pady=(scaled(8), 0),
     )
-    project_link = make_link(info_card, "happycola233/tchMaterial-parser", PROJECT_URL, about_window)
-    project_link.grid(row=1, column=1, sticky="nw", pady=(scaled(8), 0))
+    fork_frame = ttk.Frame(info_card)
+    make_link(fork_frame, "Minecraftgoose", "https://github.com/Minecraftgoose", about_window).pack(side="left")
+    ttk.Label(fork_frame, text="（Windows 7 适配）", style="AboutCard.TLabel").pack(side="left")
+    fork_frame.grid(row=1, column=1, sticky="nw", pady=(scaled(8), 0))
 
-    ttk.Label(info_card, text="许可证", style="AboutCardMuted.TLabel").grid(
+    ttk.Label(info_card, text="本分支", style="AboutCardMuted.TLabel").grid(
         row=2, column=0, sticky="nw", padx=(0, scaled(16)), pady=(scaled(8), 0),
     )
+    fork_link = make_link(info_card, f"Minecraftgoose/{NEW}", FORK_URL, about_window)
+    fork_link.grid(row=2, column=1, sticky="nw", pady=(scaled(8), 0))
+
+    ttk.Label(info_card, text="上游", style="AboutCardMuted.TLabel").grid(
+        row=3, column=0, sticky="nw", padx=(0, scaled(16)), pady=(scaled(8), 0),
+    )
+    upstream_link = make_link(info_card, f"happycola233/{OLD}", UPSTREAM_URL, about_window)
+    upstream_link.grid(row=3, column=1, sticky="nw", pady=(scaled(8), 0))
+
+    ttk.Label(info_card, text="许可证", style="AboutCardMuted.TLabel").grid(
+        row=4, column=0, sticky="nw", padx=(0, scaled(16)), pady=(scaled(8), 0),
+    )
     license_link = make_link(info_card, "MIT License", LICENSE_URL, about_window)
-    license_link.grid(row=2, column=1, sticky="nw", pady=(scaled(8), 0))
+    license_link.grid(row=4, column=1, sticky="nw", pady=(scaled(8), 0))
 
     # 第三方资源与许可证说明
     license_card = ttk.Frame(frame, style="Card.TFrame", padding=(scaled(16), scaled(12)))
@@ -146,5 +165,4 @@ def show_about_window() -> None: # 打开关于窗口
     ).pack(side="right")
 
     center_window(about_window, runtime.root)
-    theme.apply_titlebar_theme(about_window)
     about_window.lift()

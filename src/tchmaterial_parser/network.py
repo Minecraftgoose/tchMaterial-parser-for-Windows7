@@ -6,6 +6,7 @@
 # 不要把这里的静态头直接拿去下私有文件。accessToken 查询参数也不要在这里拼：
 # 官网只有专题课 docplayer 会拼，UC SDK 和普通教材 pdf.js 都不会；本工具统一不拼。
 
+from __future__ import annotations
 import requests
 
 REQUEST_TIMEOUT = (10, 60) # 连接 / 相邻两次收数据的超时秒数；requests 没有全局默认超时，缺失时卡住的请求会永久挂起
@@ -22,6 +23,7 @@ headers = { # 设置请求头部，包含认证信息
     "Authorization": "Bearer 0",
     "Origin": "https://basic.smartedu.cn",
     "Referer": "https://basic.smartedu.cn/",
+    # 刻意伪装的浏览器 UA，与本机系统无关：改成 Windows 7 的真实 UA 可能让服务端返回不同的响应，不要动它
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
     "X-ND-AUTH": 'MAC id="0",nonce="0",mac="0"',
 }

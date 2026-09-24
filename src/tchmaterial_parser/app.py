@@ -1,17 +1,19 @@
 # -*- coding: utf-8 -*-
 # 程序主流程：初始化配置、拉取资源列表、装配主窗口并进入主循环
 
-import os, sys
+from __future__ import annotations
+import ctypes, os, sys
 import tkinter as tk
 from tkinter import ttk, messagebox
 import psutil
+import win32api, win32con, win32gui, win32print
 from PIL import Image, ImageTk
 
 from . import __version__
 from .catalog import ResourceHelper
 from .config import load_access_token, load_config, save_config
-from .images import make_icon_image, render_system_emoji
-from .platform_utils import ctypes, os_name, print_error, resource_path, win32api, win32con, win32gui, win32print
+from .images import make_icon_image
+from .platform_utils import print_error, resource_path
 from .ui import download_panel, runtime, theme
 from .ui.about_window import show_about_window
 from .ui.resource_tree import build_resource_tree
@@ -19,27 +21,25 @@ from .ui.runtime import scaled
 from .ui.token_window import show_access_token_window
 from .ui.widgets import auto_hide_scrollbar, bind_context_menu, bind_tab_navigation, center_window
 
-# 主界面上方的功能说明：Emoji 与正文分开渲染以保留系统字体的完整字形
+# 主界面上方的功能说明：图标一律用 assets 中的 Fluent Emoji 3D PNG，不依赖系统 Emoji 字体
 DESCRIPTION_ITEMS = (
-    ("📌", "在右侧的文本框中输入一个或多个资源页面的网址（每行一个），或直接在左侧的列表中选择资源。"),
-    ("🔗️", "网址示例：https://basic.smartedu.cn/tchMaterial/detail?contentType=assets_document&contentId=..."),
-    ("📥", "点击 “下载” 解析并下载资源；点击 “解析并复制” 则只把资源的直链复制到剪贴板。"),
-    ("ℹ️", "为了更可靠地下载，建议先点击 “设置 Token”，参照里面的说明完成设置。"),
+    ("pin", "在右侧的文本框中输入一个或多个资源页面的网址（每行一个），或直接在左侧的列表中选择资源。"),
+    ("link", "网址示例：https://basic.smartedu.cn/tchMaterial/detail?contentType=assets_document&contentId=..."),
+    ("download", "点击 “下载” 解析并下载资源；点击 “解析并复制” 则只把资源的直链复制到剪贴板。"),
+    ("about", "为了更可靠地下载，建议先点击 “设置 Token”，参照里面的说明完成设置。"),
 )
 
 
 def main() -> None: # 程序入口：初始化界面并进入主循环
     scale: float | None = None
 
-    # 在 Windows 上进行高 DPI 适配
-    if os_name == "Windows" and win32print and win32gui and win32con and win32api and ctypes:
-        scale = round(win32print.GetDeviceCaps(win32gui.GetDC(0), win32con.DESKTOPHORZRES) / win32api.GetSystemMetrics(0), 2) # 获取当前的缩放因子
-
-        # 调用 API 设置成由应用程序缩放
-        try: # Windows 8.1 或更新
-            ctypes.windll.shcore.SetProcessDpiAwareness(2)
-        except Exception: # Windows 8 或更老
-            ctypes.windll.user32.SetProcessDPIAware()
+    # 高 DPI 适配：先按设备像素宽与逻辑像素宽之比估算缩放因子，再把进程声明为 DPI 感知
+    try:
+        scale = round(win32print.GetDeviceCaps(win32gui.GetDC(0), win32con.DESKTOPHORZRES) / win32api.GetSystemMetrics(0), 2)
+    except Exception as e:
+        print_error(e)
+    # Windows 7 没有 shcore.dll只能用这个旧 API
+    ctypes.windll.user32.SetProcessDPIAware()
 
     # 配置只读取一次，同时用于恢复 Access Token 与主题
     saved_config = load_config()
@@ -67,15 +67,8 @@ def main() -> None: # 程序入口：初始化界面并进入主循环
         except Exception:
             scale = 1.0
 
-    # 在 macOS 上，Tk 通常把 DPI 报成 72（即 scale 为 0.75），需把 scaling 除以 0.75 以补偿；
-    # 其它平台直接使用检测到的缩放因子（至少 1.0）
-    if os_name == "Darwin":
-        root.tk.call("tk", "scaling", max(scale / 0.75, 1.0))
-    else:
-        root.tk.call("tk", "scaling", max(scale, 1.0))
-
-    # 界面元素的尺寸另算：macOS 会自行处理 Retina 缩放，故固定取 1
-    runtime.ui_scale = 1.0 if os_name == "Darwin" else max(scale, 1.0)
+    root.tk.call("tk", "scaling", max(scale, 1.0))
+    runtime.ui_scale = max(scale, 1.0)
     root.title(f"国家中小学智慧教育平台 资源下载工具 {__version__}") # 设置窗口标题
 
     # 应用主题：优先沿用用户上次手动切换的结果，否则跟随系统的浅色/深色模式
@@ -191,15 +184,11 @@ def main() -> None: # 程序入口：初始化界面并进入主循环
 
     description_icons: list[ImageTk.PhotoImage] = [] # 保存 Tk 图片引用，避免图标被垃圾回收
     description_labels: list[ttk.Label] = []
-    for row, (symbol, text) in enumerate(DESCRIPTION_ITEMS):
+    for row, (icon_name, text) in enumerate(DESCRIPTION_ITEMS):
         row_padding = (0, scaled(1)) if row < len(DESCRIPTION_ITEMS) - 1 else 0
-        emoji_image = render_system_emoji(symbol, description_icon_size)
-        if emoji_image is not None:
-            photo = ImageTk.PhotoImage(emoji_image)
-            description_icons.append(photo)
-            description_icon_label = ttk.Label(description_card, image=photo, style="Description.TLabel")
-        else: # Pillow 无法读取系统 Emoji 字体时，退回改版前由 Tk 直接显示字符的方式
-            description_icon_label = ttk.Label(description_card, text=symbol, style="Description.TLabel")
+        photo = ImageTk.PhotoImage(make_icon_image(icon_name, description_icon_size))
+        description_icons.append(photo)
+        description_icon_label = ttk.Label(description_card, image=photo, style="Description.TLabel")
         description_icon_label.grid(row=row, column=0, sticky="n", padx=(0, description_icon_gap), pady=row_padding)
         description_label = ttk.Label(
             description_card,

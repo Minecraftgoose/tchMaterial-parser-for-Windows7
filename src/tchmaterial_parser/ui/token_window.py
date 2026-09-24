@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # 设置 Access Token 的窗口，以及其中的获取方法说明窗口
 
+from __future__ import annotations
 import tkinter as tk
 import tkinter.font as tkfont
 from tkinter import ttk, messagebox
@@ -8,7 +9,7 @@ import webbrowser
 
 from . import runtime, theme
 from .runtime import scaled
-from .theme import ACCENT_BUTTON_STYLE, apply_titlebar_theme, register_themed_widget
+from .theme import ACCENT_BUTTON_STYLE, register_themed_widget
 from .widgets import bind_context_menu, bind_tab_navigation, center_window
 from .. import config
 from ..auth import format_token_json
@@ -286,7 +287,6 @@ def show_access_token_window() -> None: # 打开输入 Access Token 的窗口
         ttk.Button(button_frame, text="关闭", command=help_win.destroy).pack(side="right")
 
         center_window(help_win, token_window) # 让帮助弹窗居中
-        apply_titlebar_theme(help_win) # 让标题栏跟随主题
         help_win.lift() # 置顶可见
 
     # 底部按钮栏：左侧为帮助按钮，右侧为保存按钮
@@ -298,5 +298,4 @@ def show_access_token_window() -> None: # 打开输入 Access Token 的窗口
     save_btn.pack(side="right")
 
     center_window(token_window, runtime.root) # 让弹窗居中
-    apply_titlebar_theme(token_window) # 让标题栏跟随主题
     token_window.lift() # 置顶可见

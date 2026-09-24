@@ -11,12 +11,14 @@
 
 ## 本地开发
 
-本项目使用 **Python 3.10 或更高版本**（`X | Y` 形式的类型注解仅在该版本及以后的版本可用）。
+本项目使用 **Python 3.8**（Windows 7 能用的最后一个官方版本）。
+
+由于 3.8 没有 PEP 604 的运行时支持（不支持 `str | None` 这种写法），所有模块顶部都带 `from __future__ import annotations`，让注解以字符串形式保留、永不求值。**新增模块时务必照抄这一行**，并且不要在运行时（非注解位置）使用 `X | Y` 或 `list[str]` 等下标泛型。
 
 ```sh
 # 克隆项目
-git clone https://github.com/happycola233/tchMaterial-parser.git
-cd tchMaterial-parser
+git clone https://github.com/Minecraftgoose/tchMaterial-parser-for-Windows7.git
+cd tchMaterial-parser-for-Windows7
 
 # 安装依赖
 python -m pip install .
@@ -25,10 +27,17 @@ python -m pip install .
 python ./src/main.py
 ```
 
+# 安装依赖（Windows 7 实测可用的版本）
+python -m pip install -r requirements-win7.txt
+
+# 安装打包依赖
+python -m pip install -r requirements-build-win7.txt
+
 > [!NOTE]
-> 本工具使用 **Tkinter** 构建图形界面。Windows 与 macOS 的官方 Python 通常已自带，而部分 Linux 发行版需要单独安装，例如在 Debian/Ubuntu 上执行 `sudo apt install python3-tk`。
+> 本工具使用 **Tkinter** 构建图形界面，官方 Windows 版 Python 已自带，无需单独安装。
 >
-> 此外，精简安装的 Linux 系统可能缺少中文字体与 Emoji 字体，此时界面上可能会出现方框等异常现象。可按需安装，例如在 Debian/Ubuntu 上执行 `sudo apt install fonts-noto-cjk fonts-noto-color-emoji`。
+> Windows 7 没有 `seguiemj.ttf`（Segoe UI Emoji），界面上的主题图标会退化为单色的 Segoe UI Symbol 字形，
+> 或直接回退到 `assets` 里的 PNG 图标，均属正常现象。
 
 ## 测试与检查
 
@@ -53,14 +62,14 @@ python -m flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 
 ```sh
 python -m pip install pyinstaller
-pyinstaller ./tchMaterial-parser.spec
+pyinstaller ./tchMaterial-parser-for-Windows7.spec
 ```
 
 构建产物位于 `dist` 目录。
 
 ## 代码与文案约定
 
-- 本工具在设计上支持 Windows、Linux、macOS 操作系统，编写代码时应确保**跨平台兼容性**。
+- 本分支在设计上**仅支持 Windows 7**。不要新增跨平台分支（如 `platform.system()` 判定、`sys.platform` 条件导入），也不要为 macOS / Linux 添加降级逻辑。
 - 命名要**准确表达意图**；重命名变量、函数或模块时，请**同步更新**相关引用。
 - 意图不明显的业务逻辑可以添加**简洁中文注释**；能从代码本身读懂的内容一般不需要注释。
 - 不要为了理论上不可能发生的内部状态添加复杂兜底逻辑，校验应主要放在用户输入、文件系统、网络请求、外部 API 等**系统边界**。

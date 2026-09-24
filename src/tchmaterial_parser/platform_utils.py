@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
-# 平台相关的基础设施：错误输出、只读资源定位、操作系统判定与 Windows 专有库
+# 平台相关的基础设施：错误输出与只读资源定位
+# 本分支仅支持 Windows 7：不做跨平台分支，各模块按需自行导入 win32api / winreg / ctypes 等
 
-import sys, platform, traceback
+from __future__ import annotations
+
+import sys, traceback
 from pathlib import Path
 
 def print_error(e: Exception) -> None: # 打印错误信息到控制台
@@ -17,13 +20,3 @@ def resource_path(*parts: str) -> Path: # 获取源码或 PyInstaller 打包后�
         package_root = Path(__file__).resolve().parent
 
     return package_root.joinpath(*parts)
-
-os_name = platform.system() # 获取操作系统类型
-if os_name == "Windows": # 在 Windows 操作系统下，导入 Windows 相关库
-    try:
-        import win32print, win32gui, win32con, win32api, ctypes, winreg
-    except Exception as e:
-        print_error(e)
-        win32print = win32gui = win32con = win32api = ctypes = winreg = None
-else:
-    win32print = win32gui = win32con = win32api = ctypes = winreg = None

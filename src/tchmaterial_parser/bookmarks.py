@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # 为下载好的 PDF 写入章节书签
 
+from __future__ import annotations
 from pypdf import PdfReader, PdfWriter
 
 from .platform_utils import print_error

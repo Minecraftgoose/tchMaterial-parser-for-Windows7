@@ -28,6 +28,7 @@
 # - 没有 mac_key 时退回旧占位头 nonce="0",mac="0"，兼容只保存了 Access Token 的用户。
 #   此时部分私有资源仍可能 400，需要用户重新粘贴含 mac_key 的 JSON。
 
+from __future__ import annotations
 import base64, hashlib, hmac, json, math, random, time
 from typing import NamedTuple
 from urllib.parse import unquote, urlsplit

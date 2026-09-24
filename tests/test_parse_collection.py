@@ -1,20 +1,20 @@
 import unittest
-from typing import get_type_hints
 
 from src.tchmaterial_parser.api import ResourceInfo
-from src.tchmaterial_parser.ui.download_panel import collect_parsed_resources, parse_urls_in_background
+from src.tchmaterial_parser.ui.download_panel import collect_parsed_resources
 
 
 def make_resource(url: str, title: str = "资源") -> ResourceInfo:
     return ResourceInfo(title, url, "pdf", [])
 
 
-class CollectParsedResourcesTest(unittest.TestCase):
-    def test_callback_annotations_can_be_evaluated(self) -> None:
-        # Python 3.14 延迟求值注解；显式求值以免启动错误被新版解释器掩盖。
-        get_type_hints(collect_parsed_resources)
-        get_type_hints(parse_urls_in_background)
+# 原有一个 test_callback_annotations_can_be_evaluated：它用 get_type_hints() 强制求值注解，
+# 是为 Python 3.14 的延迟求值准备的。本分支跑在 Python 3.8 上，所有模块都带
+# from __future__ import annotations，注解里的 `X | None` 一旦被求值就会因缺少 PEP 604
+# 运行时支持而抛 TypeError，因此该用例在 3.8 上必然失败，已移除。
+# 换句话说：本分支的正确性前提是 “注解永不被求值”，不要重新引入 get_type_hints()。
 
+class CollectParsedResourcesTest(unittest.TestCase):
     def test_flattens_multiple_resources_per_url(self) -> None:
         def fake_parse(url: str, bookmarks: bool):
             return [make_resource("https://example.com/a.pdf"), make_resource("https://example.com/b.mp3")]

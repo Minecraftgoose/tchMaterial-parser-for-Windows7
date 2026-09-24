@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # 通用控件辅助：右键菜单、滚动条自动隐藏、Tab 键导航与窗口居中
 
+from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 from typing import Literal
 
 from . import runtime
 from .theme import register_themed_widget
-from ..platform_utils import os_name
 
 root_handlers_bound: dict[tk.Menu, bool] = {} # 用于记录每个右键菜单是否已绑定根窗口事件，避免重复绑定
 
@@ -57,9 +57,6 @@ def bind_context_menu(parent: tk.Widget, menu_type: Literal["normal", "noundo", 
     parent.bind("<Button-3>", show_context_menu) # 鼠标右键
     parent.bind("<Menu>", lambda e: show_context_menu(e, True)) # BUG: 按下菜单键不起作用
     parent.bind("<Shift-F10>", lambda e: show_context_menu(e, True))
-    if os_name == "Darwin":
-        parent.bind("<Control-Button-1>", show_context_menu) # Command + 鼠标左键
-        parent.bind("<Button-2>", show_context_menu) # 鼠标中键
 
 def auto_hide_scrollbar(scrollbar: ttk.Scrollbar, first: str, last: str) -> None: # 根据内容自动显示或隐藏滚动条
     scrollbar.set(first, last)

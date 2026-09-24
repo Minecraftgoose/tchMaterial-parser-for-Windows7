@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # 解析单个资源页面，获取资源标题、下载直链、文件格式与章节目录
 
+from __future__ import annotations
 import re
 from typing import NamedTuple
 from urllib.parse import urlparse, parse_qs

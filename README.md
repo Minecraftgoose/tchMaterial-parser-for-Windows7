@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="./assets/logo.png" alt="tchMaterial-parser Logo" width="128" />
+<img src="./assets/logo.png" alt="tchMaterial-parser-for-Windows7 Logo" width="128" />
 
-# tchMaterial-parser
+# tchMaterial-parser-for-Windows7
 
 **[国家中小学智慧教育平台](https://basic.smartedu.cn/) [电子课本](https://basic.smartedu.cn/tchMaterial/)下载工具**
 
@@ -10,16 +10,14 @@
 
 <br />
 
-[![GitHub Release](https://img.shields.io/github/v/release/happycola233/tchMaterial-parser?style=flat-square&color=4c8bf5&logo=github)](../../releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/happycola233/tchMaterial-parser/total?style=flat-square&color=4c8bf5&label=downloads)](../../releases)
-[![Stars](https://img.shields.io/github/stars/happycola233/tchMaterial-parser?style=flat-square&color=f5a623)](../../stargazers)
-[![Python Version](https://img.shields.io/badge/Python-3.10+-3776ab?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=flat-square)](../../releases)
+[![GitHub Release](https://img.shields.io/github/v/release/Minecraftgoose/tchMaterial-parser-for-Windows7?style=flat-square&color=4c8bf5&logo=github)](../../releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/Minecraftgoose/tchMaterial-parser-for-Windows7/total?style=flat-square&color=4c8bf5&label=downloads)](../../releases)
+[![Stars](https://img.shields.io/github/stars/Minecraftgoose/tchMaterial-parser-for-Windows7?style=flat-square&color=f5a623)](../../stargazers)
+[![Python Version](https://img.shields.io/badge/Python-3.8-3776ab?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![Platform](https://img.shields.io/badge/Platform-Windows%207-lightgrey?style=flat-square)](../../releases)
 [![License](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
-[![Trendshift](https://trendshift.io/api/badge/repositories/13774)](https://trendshift.io/repositories/13774)
-
-感谢每一位使用者与贡献者，本项目于 2025 年 5 月登上 **GitHub Trending 总榜第 3 名**（单日新增约 400 Stars），并获得 [**Trendshift Python 日榜第 3 名**](https://trendshift.io/repositories/13774) 🎉
+上游项目 [happycola233/tchMaterial-parser](https://github.com/happycola233/tchMaterial-parser) 于 2025 年 5 月登上 **GitHub Trending 总榜第 3 名**（单日新增约 400 Stars），并获得 **Trendshift Python 日榜第 3 名** 🎉
 
 [📥 下载安装](#-下载与安装方法) · [🛠️ 使用方法](#️-使用方法) · [❓ 常见问题](#-常见问题) · [🐛 反馈问题](../../issues)
 
@@ -42,7 +40,6 @@
 - [📥 下载与安装方法](#-下载与安装方法)
 - [🛠️ 使用方法](#️-使用方法)
 - [❓ 常见问题](#-常见问题)
-- [⭐ Star History](#-star-history)
 - [🤝 贡献指南](#-贡献指南)
 - [⚖️ 免责声明](#️-免责声明)
 - [📜 许可证](#-许可证)
@@ -56,49 +53,27 @@
 - 🔎 **资源快速搜索**：可按资源名称或 “学段、学科、年级” 等分类组合搜索，结果会自动展开；长名称支持横向滚动，悬停时可查看完整信息和大尺寸封面。
 - 🖥️ **高 DPI 适配**：优化 UI 以适配高分辨率屏幕，避免界面模糊问题。
 - 🌗 **深色模式**：启动时自动跟随系统的浅色/深色模式，也可点击右上角的按钮手动切换，切换结果会被记住。
-- 💻 **跨平台支持**：支持 Windows、Linux、macOS 等操作系统（需要图形界面）。
+- 🪟 **Windows 7 专用**：本分支已移除全部跨平台分支，仅面向 **Windows 7 + Python 3.8**。
 
 ## 📥 下载与安装方法
 
 | 方式 | 适用平台 | 获取途径 |
 | :-- | :-- | :-- |
-| [🐙 **GitHub Releases**](#github-releases) | Windows / Linux / macOS（x86_64、Arm64） | [前往 Releases 页面](../../releases) |
-| [📦 **WinGet**](#winget) | Windows 10 / 11 / Server 2025 | `winget install tchMaterial-parser` |
-| [🐧 **AUR**](#arch-用户软件仓库aur) | Arch Linux | `yay -S tchmaterial-parser` |
-| [🐍 **从源码运行**](#从源码运行) | 任意平台（需 Python 3.10+） | [见下文](#从源码运行) |
+| [🐙 **GitHub Releases**](#github-releases) | Windows 7（x86_64） | [前往 Releases 页面](../../releases) |
+| [🐍 **从源码运行**](#从源码运行) | Windows 7（需 Python 3.8） | [见下文](#从源码运行) |
 
 ### GitHub Releases
 
-本项目的 [GitHub Releases 页面](../../releases)会发布适用于 **Windows、Linux、macOS** 的 **x86_64、Arm64** 架构的程序。
+本项目的 [GitHub Releases 页面](../../releases)会发布适用于 **Windows 7** 的 **x86_64** 程序。
 
-下载完成之后不需要额外的安装步骤。Windows 和 Linux 可直接运行本程序。
+下载完成之后不需要额外的安装步骤，可直接运行。
 
 > [!WARNING]
-> 在 macOS 操作系统中，由于没有签名，系统会报告文件已被损坏，因此需要先运行 `xattr -cr /path/to/tchMaterial-parser.app` 来移除应用的 “隔离” 属性。为了保证 Access Token 的持久化，建议将应用移动到 `/Applications` 目录下再运行。
-
-### WinGet
-
-在 **Windows 10、Windows 11 与 Windows Server 2025** 上，您可以直接在终端中输入以下命令来安装本程序：
-
-```batch
-winget install happycola233.tchMaterial-parser
-```
-
-感谢 [@PtJade-Ceramic](https://github.com/PtJade-Ceramic) 的建议（[#64](../../issues/64)）！
-
-### Arch 用户软件仓库（AUR）
-
-对于 **Arch Linux** 操作系统，本程序已发布至 [Arch 用户软件仓库](https://aur.archlinux.org/packages/tchmaterial-parser)，因此您可以在终端中输入以下命令来安装本程序：
-
-```sh
-yay -S tchmaterial-parser
-```
-
-感谢 [@iamzhz](https://github.com/iamzhz) 为本工具制作了发行包（[#26](../../issues/26)）！
+> 目标机器必须是 **Windows 7 SP1**，并已安装 **KB2533623**（或其继任者 **KB3063858**）与 **VC++ 2015-2019 运行库**，否则程序可能无法启动。
 
 ### 从源码运行
 
-若您想体验最新的改动，或是希望参与开发，可以直接从源码运行本工具，详见[贡献者指南](./CONTRIBUTING.md#本地开发)。
+若您想体验最新的改动，或是希望参与开发，可以直接从源码运行本工具（需 **Python 3.8**），详见[贡献者指南](./CONTRIBUTING.md#本地开发)。
 
 ## 🛠️ 使用方法
 
@@ -190,10 +165,7 @@ https://basic.smartedu.cn/tchMaterial/detail?contentType=assets_document&content
 
 <br />
 
-- **Windows**：Token 会存储在**注册表** `HKEY_CURRENT_USER\Software\tchMaterial-parser` 项中的 `AccessToken` 值。
-- **Linux**：Token 会存储在**文件** `~/.config/tchMaterial-parser/data.json` 中。
-- **macOS**：Token 会存储在**文件** `~/Library/Application Support/tchMaterial-parser/data.json` 中。
-- **其他操作系统**：目前暂不支持持久化，目前我们正在寻找通用的解决方案。
+- Token 会存储在**注册表** `HKEY_CURRENT_USER\Software\tchMaterial-parser-for-Windows7` 项中的 `AccessToken`、`MacKey`、`TokenDiff`、`Theme` 值。
 
 </details>
 
@@ -207,31 +179,24 @@ https://basic.smartedu.cn/tchMaterial/detail?contentType=assets_document&content
 
 </details>
 
-## ⭐ Star History
-
-<div align="center">
-<a href="https://www.star-history.com/?repos=happycola233%2FtchMaterial-parser&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=happycola233/tchMaterial-parser&type=date&theme=dark&legend=top-left&sealed_token=lp-dz0jwomojnfZdkKWtPYjxu2cIaluD151Uh_sKuhgbIy1MAw4WMMHg9KPtHrdNSur9Z6j6P4cR0NAR7-8vT_ttSDIBynMuDVy5ljc73IMV_4RAyLzs1GtoC6yH3QNnQtQahl8r9J2REXs-NNJ7Pu55SQ2X52m6JNy5v91zdGypyXAi758su9beu7pb" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=happycola233/tchMaterial-parser&type=date&legend=top-left&sealed_token=lp-dz0jwomojnfZdkKWtPYjxu2cIaluD151Uh_sKuhgbIy1MAw4WMMHg9KPtHrdNSur9Z6j6P4cR0NAR7-8vT_ttSDIBynMuDVy5ljc73IMV_4RAyLzs1GtoC6yH3QNnQtQahl8r9J2REXs-NNJ7Pu55SQ2X52m6JNy5v91zdGypyXAi758su9beu7pb" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=happycola233/tchMaterial-parser&type=date&legend=top-left&sealed_token=lp-dz0jwomojnfZdkKWtPYjxu2cIaluD151Uh_sKuhgbIy1MAw4WMMHg9KPtHrdNSur9Z6j6P4cR0NAR7-8vT_ttSDIBynMuDVy5ljc73IMV_4RAyLzs1GtoC6yH3QNnQtQahl8r9J2REXs-NNJ7Pu55SQ2X52m6JNy5v91zdGypyXAi758su9beu7pb" />
- </picture>
-</a>
-</div>
-
 ## 🤝 参与贡献
 
 如果您发现 Bug 或有改进建议，欢迎提交 **[Issue](../../issues)** 或 **[Pull Request](../../pulls)**，让我们一起完善本工具！
 
 参与开发前，建议先阅读[贡献者指南](./CONTRIBUTING.md)，了解本地开发、测试检查、Pull Request 与合规边界说明。
 
-感谢所有为本项目做出贡献的朋友：
+## 🙏 上游与致谢
 
-<div align="center">
-<a href="https://github.com/happycola233/tchMaterial-parser/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=happycola233/tchMaterial-parser" alt="Contributors" />
-</a>
-</div>
+本项目是 [happycola233/tchMaterial-parser](https://github.com/happycola233/tchMaterial-parser) 的 **Windows 7 专用分支**，由 [Minecraftgoose](https://github.com/Minecraftgoose) 维护，将其改造为仅支持 Windows 7 + Python 3.8 并提供 Win7 适配。
+
+- 上游作者：**肥宅水水呀**（[happycola233](https://github.com/happycola233)）、**晨叶梦春**（[wuziqian211](https://github.com/wuziqian211)）
+- 本分支维护：**Minecraftgoose**（<https://github.com/Minecraftgoose>）
+- 许可证：MIT，沿用上游，上游版权声明予以保留
+
+核心的解析、鉴权、下载与书签逻辑均来自上游，感谢原作者的工作。
+
+感谢所有为本分支做出贡献的朋友。
+
 
 ## ⚖️ 免责声明
 

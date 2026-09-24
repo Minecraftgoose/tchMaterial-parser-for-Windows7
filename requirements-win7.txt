@@ -1,0 +1,8 @@
+pillow==10.4.0
+pypdf==5.9.0
+psutil==7.2.2
+requests==2.32.4
+sv-ttk==2.6.0
+pywin32==311        
+typing_extensions==4.13.2
+urllib3==2.2.3     

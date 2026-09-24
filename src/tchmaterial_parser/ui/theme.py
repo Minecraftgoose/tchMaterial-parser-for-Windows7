@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # 浅色／深色主题：配色常量、命名字体、系统主题探测与主题应用
 
-import subprocess
+from __future__ import annotations
 import tkinter as tk
 from collections.abc import Callable
 from tkinter import ttk
@@ -11,7 +11,7 @@ import sv_ttk # Sun Valley（Windows 11 风格）主题
 
 from . import runtime
 from .runtime import scaled
-from ..platform_utils import ctypes, os_name, print_error, winreg
+from ..platform_utils import print_error
 
 switched_theme = "system" # 选择的主题
 current_theme = "light" # 当前主题，若 switched_theme 为 `system` 则 current_theme 为系统主题（`light` 或 `dark`）
@@ -55,7 +55,8 @@ def pick_ui_font_family() -> str: # 选择一个合适的字体
     except Exception:
         return "TkDefaultFont"
 
-    for name in ("Microsoft YaHei UI", "微软雅黑", "PingFang SC", "Noto Sans CJK SC", "WenQuanYi Zen Hei", "Arial Unicode MS"): # 在这些字体中选择一个可用的字体
+    # Windows 7 只有 “微软雅黑”，没有 “Microsoft YaHei UI”（后者随 Windows 8 引入）
+    for name in ("微软雅黑", "Microsoft YaHei", "Microsoft YaHei UI", "SimSun"): # 在这些字体中选择一个可用的字体
         if name in available:
             return name
 
@@ -78,48 +79,9 @@ def setup_fonts() -> None: # 创建（或更新）所有命名字体，使其使
         runtime.root.tk.call("font", "configure" if name in existing_fonts else "create", name, *options)
 
 def detect_system_theme() -> Literal["light", "dark"]: # 获取系统当前使用的是浅色还是深色模式
-    try:
-        if os_name == "Windows" and winreg: # 在 Windows 上，读取注册表中的个性化设置
-            with winreg.OpenKey(
-                winreg.HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize"
-            ) as key:
-                apps_use_light_theme, _ = winreg.QueryValueEx(key, "AppsUseLightTheme")
-            return "light" if apps_use_light_theme else "dark"
-        elif os_name == "Darwin": # 在 macOS 上，读取全局偏好设置（仅深色模式下存在 AppleInterfaceStyle 项，其值为 Dark）
-            result = subprocess.run(
-                ["defaults", "read", "-g", "AppleInterfaceStyle"],
-                capture_output=True, text=True, timeout=2,
-            )
-            return "dark" if result.stdout.strip() == "Dark" else "light"
-        elif os_name == "Linux": # 在 Linux 上，读取 GNOME 的配色方案设置（其值形如 "prefer-dark"）
-            try:
-                result = subprocess.run(
-                    ["gsettings", "get", "org.gnome.desktop.interface", "color-scheme"],
-                    capture_output=True, text=True, timeout=2,
-                )
-            except FileNotFoundError: # 非 GNOME 桌面环境多半没有 gsettings，此时无从判断，按浅色处理
-                return "light"
-            return "dark" if "dark" in result.stdout.lower() else "light"
-    except Exception as e:
-        print_error(e)
-
-    return "light" # 其余情况一律视为浅色模式
-
-def apply_titlebar_theme(window: tk.Tk | tk.Toplevel) -> None: # 在 Windows 上让窗口标题栏跟随深色模式
-    # macOS 与 Linux 的标题栏由系统或窗口管理器绘制，没有对应的接口可供单独设置，
-    # 因此在这两个平台上，手动切换主题后标题栏仍会保持系统的深浅色，只有窗口内部会随之改变
-    if os_name != "Windows" or not ctypes:
-        return
-
-    try:
-        window.update_idletasks()
-        hwnd = ctypes.windll.user32.GetParent(window.winfo_id()) # Tk 窗口的父窗口才是带标题栏的那个窗口
-        value = ctypes.c_int(1 if current_theme == "dark" else 0)
-        for attribute in (20, 19): # DWMWA_USE_IMMERSIVE_DARK_MODE，20 适用于 Windows 10 20H1 及更新版本，19 适用于更早的版本
-            if ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, attribute, ctypes.byref(value), ctypes.sizeof(value)) == 0:
-                break
-    except Exception as e:
-        print_error(e)
+    # Windows 7 没有系统级的浅色/深色模式开关（注册表的 AppsUseLightTheme 自 Windows 10 才存在），
+    # 因此跟随系统时一律按浅色模式处理，用户仍可点右上角的按钮手动切到深色
+    return "light"
 
 def register_themed_widget(widget: tk.Widget) -> None: # 登记需要跟随主题手动调整配色的 tk 原生控件（ttk 控件由主题自动处理），并立即应用当前配色
     themed_widgets.add(widget)
@@ -174,5 +136,3 @@ def apply_theme(theme: Literal["system", "light", "dark"]) -> None: # 应用浅�
             action()
         except Exception as e:
             print_error(e)
-
-    apply_titlebar_theme(runtime.root)

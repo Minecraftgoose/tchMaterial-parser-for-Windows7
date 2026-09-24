@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # 左侧资源列表：勾选教材或分类、搜索筛选、封面按需加载与悬停预览
 
+from __future__ import annotations
 import io
 import tkinter as tk
 from collections.abc import Iterator
@@ -14,7 +15,7 @@ from .widgets import auto_hide_scrollbar, bind_context_menu
 from ..catalog import count_resource_items, filter_resource_items
 from ..images import fit_cover_image
 from ..network import session
-from ..platform_utils import os_name, print_error
+from ..platform_utils import print_error
 
 def build_resource_url(item_path: str, resource_data: dict) -> str: # 根据树项路径与资源数据生成资源页面链接
     resource_type = resource_data.get("resource_type_code") or "assets_document"
@@ -476,7 +477,7 @@ def build_resource_tree(pane: ttk.Frame, resource_list: dict[str, dict], url_tex
         return "break"
 
     def on_tree_shift_mousewheel(event: tk.Event) -> str:
-        delta_unit = 1 if os_name == "Darwin" else 120
+        delta_unit = 120 # Windows 下 event.delta 恒为 120 的整数倍，除它以得到滚动行数
         return scroll_tree_horizontally(-event.delta / delta_unit)
 
     rebuild_checkbox_images() # 构建树项前先生成三态复选框图标
@@ -499,5 +500,3 @@ def build_resource_tree(pane: ttk.Frame, resource_list: dict[str, dict], url_tex
     treeview.bind("<Shift-Button-5>", lambda _event: scroll_tree_horizontally(1))
     search_entry.bind("<Escape>", lambda _event: search_var.set(""))
     runtime.root.bind("<Control-f>", focus_search)
-    if os_name == "Darwin":
-        runtime.root.bind("<Command-f>", focus_search)

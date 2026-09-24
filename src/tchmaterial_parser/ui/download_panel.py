@@ -2,6 +2,7 @@
 # 下载面板：解析并复制直链、下载资源文件与进度反馈
 # 本模块持有与下载相关的几个控件句柄，因此这些控件的读写不必跨模块
 
+from __future__ import annotations
 import os, re, threading, time, traceback
 import tkinter as tk
 from collections import Counter
@@ -179,7 +180,7 @@ def download_filename(resource: ResourceInfo) -> str:
     return sanitize_filename(f"{resource.title or 'download'}.{resource.file_format}")
 
 def filename_key(filename: str) -> str:
-    """以跨平台保守方式比较文件名，提前避开 Windows/macOS 上的大小写冲突。"""
+    """以保守方式比较文件名，提前避开 Windows 上仅有大小写不同的同名文件。"""
     return os.path.normcase(filename).casefold()
 
 def allocate_download_paths(resources: list[ResourceInfo], directory: str) -> list[str]:

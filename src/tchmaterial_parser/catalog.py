@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # 获取平台上的资源目录树，并提供按分类路径筛选与计数的辅助函数
 
+from __future__ import annotations
 from .network import session
 
 class ResourceHelper: # 获取网站上资源的数据

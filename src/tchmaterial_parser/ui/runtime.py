@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # 界面运行时状态：主窗口、缩放因子，以及跨线程的调度封装
 
+from __future__ import annotations
 import threading
 import tkinter as tk
 from collections.abc import Callable
