@@ -28,18 +28,34 @@ a = Analysis(
 )
 pyz = PYZ(a.pure)
 
+# UPX 排除项：这些模块带 TLS/ASLR/自校验特性，压缩后在 Windows 7 上可能加载失败或触发杀软误报
+# UPX 未安装时 upx=True 会被 PyInstaller 静默跳过，不会导致构建失败
+upx_exclude = [
+    "python38.dll",       # 解释器主 DLL
+    "pythoncom38.dll",    # pywin32 COM，含 TLS，压缩后易崩
+    "pywintypes38.dll",   # pywin32 基础类型
+    "win32api.pyd",
+    "win32com.shell.shell.pyd",
+    "_ssl.pyd",           # OpenSSL，压缩后握手偶发异常
+    "_hashlib.pyd",
+    "_tkinter.pyd",       # Tk 入口，Win7 上对压缩敏感
+    "tk86.dll",
+    "tcl86.dll",
+]
+
+# 文件夹（onedir）模式：exe 只携带 pyz + 脚本，依赖与数据由 COLLECT 收集到同名目录下
+# 产物固定为 dist/tchMaterial-parser-for-Windows7/（内含 exe 与 _internal/），供 NSIS 整体打包
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.datas,
     [],
+    exclude_binaries=True,
     name='tchMaterial-parser-for-Windows7',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    upx_exclude=[],
+    upx_exclude=upx_exclude,
     runtime_tmpdir=None,
     console=False,
     disable_windowed_traceback=False,
@@ -49,4 +65,14 @@ exe = EXE(
     entitlements_file=None,
     version='version_info.txt',
     icon=['assets/icon.ico'],
+)
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=upx_exclude,
+    name='tchMaterial-parser-for-Windows7',
 )

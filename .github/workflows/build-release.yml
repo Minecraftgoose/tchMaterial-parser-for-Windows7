@@ -1,0 +1,186 @@
+name: Build & Release (Windows 7)
+
+permissions:
+  contents: write
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        required: true
+        type: string
+
+env:
+  APP_NAME: "tchMaterial-parser-for-Windows7"
+  APP_VERSION: "1.0.0"
+
+jobs:
+  build:
+    name: Build Windows 7 x64 Installer (NSIS 3.09)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Python 3.8.10
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.8.10"
+
+      - name: Verify Python version
+        run: |
+          python -V
+          python -c "import sys; assert sys.version_info[:3] == (3, 8, 10), sys.version"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade "pip<25"
+          pip install -r requirements-win7.txt
+          pip install -r requirements-build-win7.txt
+          pip install --no-deps .
+
+      - name: Check Python 3.8 compatibility
+        shell: bash
+        run: |
+          if [ -f tools/check_py38_compat.py ]; then
+            python tools/check_py38_compat.py src
+          else
+            echo "::warning::tools/check_py38_compat.py 不存在，跳过兼容性检查"
+          fi
+
+      - name: Install UPX 4.2.4
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = 'C:\tools\upx'
+          New-Item -ItemType Directory -Path $root -Force | Out-Null
+
+          Write-Host '下载 UPX 4.2.4 (win64)…'
+          Invoke-WebRequest `
+            -Uri 'https://github.com/upx/upx/releases/download/v4.2.4/upx-4.2.4-win64.zip' `
+            -OutFile 'upx.zip' -UserAgent 'Mozilla/5.0' -UseBasicParsing
+          Expand-Archive -Path 'upx.zip' -DestinationPath $root -Force
+
+          $upx = Get-ChildItem -Path $root -Filter 'upx.exe' -Recurse | Select-Object -First 1
+          if (-not $upx) { throw '未找到 upx.exe' }
+
+          Add-Content -Path $env:GITHUB_PATH -Value $upx.DirectoryName
+          Add-Content -Path $env:GITHUB_ENV -Value "UPX_DIR=$($upx.DirectoryName)"
+
+          $ver = (& $upx.FullName --version) -join ' '
+          if ($ver -notmatch '4\.2\.4') { throw "UPX 版本不是 4.2.4（实际：$ver）" }
+          Write-Host "UPX ready：$($upx.FullName) [$ver]"
+
+      - name: Build app with PyInstaller (onedir / 文件夹模式)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # 显式指定 --upx-dir：仅依赖 PATH 时 PyInstaller 可能探测不到而静默不压缩
+          pyinstaller --noconfirm --upx-dir "$env:UPX_DIR" ./${{ env.APP_NAME }}.spec
+
+      - name: Verify onedir output
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dir = "dist/$env:APP_NAME"
+          $exe = Join-Path $dir "$env:APP_NAME.exe"
+          if (-not (Test-Path $exe)) {
+            Get-ChildItem dist -Recurse -Depth 1 -ErrorAction SilentlyContinue |
+              Select-Object -First 20 -ExpandProperty FullName
+            throw "PyInstaller 未生成 onedir 产物：$exe"
+          }
+          Write-Host "OK 入口：$exe"
+          Write-Host "目录文件数：$((Get-ChildItem $dir -Recurse -File).Count)"
+
+      - name: Verify UPX compression
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dir = "dist/$env:APP_NAME"
+          # UPX stub 会在文件头附近留下 "UPX!" 签名，据此统计实际被压缩的文件数
+          $sig = [System.Text.Encoding]::ASCII.GetBytes('UPX!')
+          $packed = 0
+          $total  = 0
+          foreach ($f in (Get-ChildItem $dir -Recurse -File | Where-Object { $_.Extension -in '.exe', '.dll', '.pyd' })) {
+            $total++
+            $buf = New-Object byte[] 4096
+            $fs = [System.IO.File]::OpenRead($f.FullName)
+            try { $n = $fs.Read($buf, 0, 4096) } finally { $fs.Close() }
+            if ($n -lt 4) { continue }
+            for ($i = 0; $i -le $n - 4; $i++) {
+              if ($buf[$i] -eq $sig[0] -and $buf[$i+1] -eq $sig[1] -and $buf[$i+2] -eq $sig[2] -and $buf[$i+3] -eq $sig[3]) {
+                $packed++; break
+              }
+            }
+          }
+          Write-Host "UPX 已压缩：$packed / $total（exe+dll+pyd）"
+          if ($packed -eq 0) {
+            Write-Host "::warning::没有文件被 UPX 压缩，检查 --upx-dir 是否指向 upx.exe 所在目录"
+          }
+
+      - name: Install NSIS 3.09
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = 'C:\nsis'
+          try {
+            Write-Host '下载 NSIS 3.09 官方压缩包…'
+            Invoke-WebRequest `
+              -Uri 'https://sourceforge.net/projects/nsis/files/NSIS%203/3.09/nsis-3.09.zip/download' `
+              -OutFile 'nsis-3.09.zip' -UserAgent 'Mozilla/5.0' -MaximumRedirection 5 -UseBasicParsing
+            Expand-Archive -Path 'nsis-3.09.zip' -DestinationPath $root -Force
+          } catch {
+            Write-Host "官方压缩包不可用（$($_.Exception.Message)），回退 chocolatey"
+            choco install nsis --version=3.09 -y --force
+          }
+
+          $makensis = Get-ChildItem -Path @(
+            $root,
+            'C:\Program Files (x86)\NSIS',
+            'C:\Program Files\NSIS'
+          ) -Filter 'makensis.exe' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $makensis) { throw '未找到 makensis.exe' }
+
+          Add-Content -Path $env:GITHUB_PATH -Value $makensis.DirectoryName
+          $ver = (& $makensis.FullName /VERSION) -join ' '
+          if ($ver -notmatch '3\.09') { throw "NSIS 版本不是 3.09（实际：$ver）" }
+          Write-Host "NSIS ready：$($makensis.FullName) [$ver]"
+
+      - name: Build installer with NSIS 3.09
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          makensis /V2 /DAPP_VERSION=$env:APP_VERSION installer.nsi
+          $setup = "dist/$env:APP_NAME-Setup-$env:APP_VERSION.exe"
+          if (-not (Test-Path $setup)) { throw "安装器未生成：$setup" }
+          Write-Host "安装器：$(Get-Item $setup | Select-Object -ExpandProperty Length) 字节"
+
+      - name: Package portable folder (zip)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $name = $env:APP_NAME
+          $ver  = $env:APP_VERSION
+          Compress-Archive -Path "dist/$name" -DestinationPath "dist/$name-$ver-portable.zip" -Force
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ env.APP_VERSION }}-win7
+          path: |
+            dist/${{ env.APP_NAME }}-Setup-${{ env.APP_VERSION }}.exe
+            dist/${{ env.APP_NAME }}-${{ env.APP_VERSION }}-portable.zip
+          if-no-files-found: error
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/${{ env.APP_NAME }}-Setup-${{ env.APP_VERSION }}.exe
+            dist/${{ env.APP_NAME }}-${{ env.APP_VERSION }}-portable.zip
+          tag_name: ${{ inputs.tag || github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
