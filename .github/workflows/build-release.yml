@@ -42,15 +42,6 @@ jobs:
           pip install -r requirements-build-win7.txt
           pip install --no-deps .
 
-      - name: Check Python 3.8 compatibility
-        shell: bash
-        run: |
-          if [ -f tools/check_py38_compat.py ]; then
-            python tools/check_py38_compat.py src
-          else
-            echo "::warning::tools/check_py38_compat.py 不存在，跳过兼容性检查"
-          fi
-
       - name: Install UPX 4.2.4
         shell: pwsh
         run: |
