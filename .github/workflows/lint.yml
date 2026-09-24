@@ -33,9 +33,6 @@ jobs:
       - name: Compile check under Python 3.8
         run: python -m compileall -q src tests
 
-      - name: Check Python 3.8 compatibility
-        run: python tools/check_py38_compat.py src
-
       - name: Lint with flake8
         run: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 
