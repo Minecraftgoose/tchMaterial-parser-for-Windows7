@@ -14,7 +14,9 @@ on:
 
 env:
   APP_NAME: "tchMaterial-parser-for-Windows7"
-  APP_VERSION: "1.0.0"
+  # 版本不再写死：由 tag 推导，见 Resolve version from tag 步骤
+  # release 事件取 github.ref_name（即 tag 名）；手动触发取 inputs.tag
+  TAG_REF: ${{ inputs.tag || github.ref_name }}
 
 jobs:
   build:
@@ -24,6 +26,57 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+
+      - name: Resolve version from tag
+        id: version
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag = $env:TAG_REF
+          if (-not $tag) { throw 'TAG_REF 为空：release 事件应有 ref_name，手动触发需填 tag' }
+          Write-Host "原始 tag：$tag"
+
+          # 手动触发时校验 tag 真实存在，否则后续附件会无处可挂
+          if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
+            git ls-remote --exit-code --tags origin "refs/tags/$tag" | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw "tag 不存在于远端：$tag" }
+          }
+
+          # 允许 v1.2.0 / V1.2.0 / 1.2.0，统一剥掉前缀
+          $ver = $tag -replace '^[vV]', ''
+          if ($ver -notmatch '^\d+\.\d+\.\d+$') {
+            throw "版本号必须是 X.Y.Z（可带 v 前缀），实际解析出：$ver（来自 tag：$tag）"
+          }
+
+          Write-Host "解析版本：$ver"
+          Add-Content -Path $env:GITHUB_ENV  -Value "APP_VERSION=$ver"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "version=$ver"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "tag=$tag"
+
+      - name: Sync version_info.txt with tag
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # exe 的版本资源来自 version_info.txt，否则不论发什么 tag 都显示 1.0.0.0
+          $ver  = $env:APP_VERSION
+          $quad = ($ver.Split('.') + '0')[0..3] -join ', '
+          $dot  = ($ver.Split('.') + '0')[0..3] -join '.'
+
+          $path = 'version_info.txt'
+          $utf8 = New-Object System.Text.UTF8Encoding($false)   # 无 BOM，与仓库中该文件一致
+          $text = [System.IO.File]::ReadAllText($path, $utf8)
+          $before = $text
+
+          $text = [regex]::Replace($text, 'filevers=\([^)]*\)',   "filevers=($quad)")
+          $text = [regex]::Replace($text, 'prodvers=\([^)]*\)',   "prodvers=($quad)")
+          $text = [regex]::Replace($text, "('FileVersion',\s*)'[^']*'",    "`$1'$dot'")
+          $text = [regex]::Replace($text, "('ProductVersion',\s*)'[^']*'", "`$1'$dot'")
+
+          if ($text -eq $before) { throw "version_info.txt 未发生替换，检查文件格式是否被改动" }
+          [System.IO.File]::WriteAllText($path, $text, $utf8)
+          Write-Host "version_info.txt 已同步为 $dot（$quad）"
+          Select-String -Path $path -Pattern 'filevers|FileVersion|ProductVersion' |
+            ForEach-Object { Write-Host "  $($_.Line.Trim())" }
 
       - name: Set up Python 3.8.10
         uses: actions/setup-python@v6
@@ -160,18 +213,20 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.APP_NAME }}-${{ env.APP_VERSION }}-win7
+          name: ${{ env.APP_NAME }}-${{ steps.version.outputs.version }}-win7
           path: |
-            dist/${{ env.APP_NAME }}-Setup-${{ env.APP_VERSION }}.exe
-            dist/${{ env.APP_NAME }}-${{ env.APP_VERSION }}-portable.zip
+            dist/${{ env.APP_NAME }}-Setup-${{ steps.version.outputs.version }}.exe
+            dist/${{ env.APP_NAME }}-${{ steps.version.outputs.version }}-portable.zip
+          # 同一 tag 重跑时覆盖旧 artifact，避免 v4 因同名直接报错
+          overwrite: true
           if-no-files-found: error
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/${{ env.APP_NAME }}-Setup-${{ env.APP_VERSION }}.exe
-            dist/${{ env.APP_NAME }}-${{ env.APP_VERSION }}-portable.zip
-          tag_name: ${{ inputs.tag || github.ref_name }}
+            dist/${{ env.APP_NAME }}-Setup-${{ steps.version.outputs.version }}.exe
+            dist/${{ env.APP_NAME }}-${{ steps.version.outputs.version }}-portable.zip
+          tag_name: ${{ steps.version.outputs.tag }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
