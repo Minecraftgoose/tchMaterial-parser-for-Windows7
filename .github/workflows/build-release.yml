@@ -241,13 +241,32 @@ jobs:
           Add-Content -Path $env:GITHUB_ENV  -Value "MAKENSIS=$makensis"
           Write-Host "NSIS ready：$makensis [$ver]"
 
+      - name: Verify script encoding (UTF-8 BOM)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # makensis 把无 BOM 的脚本当系统 ANSI 代码页解析，中文会全变乱码。
+          # 这条在编译前拦住，避免产物界面乱码却一切「编译成功」。
+          $bytes = [System.IO.File]::ReadAllBytes('installer.nsi')
+          if (-not ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF)) {
+            throw 'installer.nsi 缺少 UTF-8 BOM（EF BB BF），编译出的界面中文会乱码'
+          }
+          Write-Host 'installer.nsi 编码检查通过：UTF-8 with BOM'
+
+          # LICENSE 原文件是无 BOM 的（Python 打包要用，不改它），
+          # 这里生成一份带 BOM 的副本专供 NSIS 许可证页读取
+          $utf8bom = New-Object System.Text.UTF8Encoding($true)
+          [System.IO.File]::WriteAllText('LICENSE.utf8bom.txt', [System.IO.File]::ReadAllText('LICENSE'), $utf8bom)
+          Write-Host '已生成 LICENSE.utf8bom.txt（供许可证页）'
+
       - name: Build installer with NSIS
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $makensis = $env:MAKENSIS
           if (-not $makensis -or -not (Test-Path $makensis)) { throw "makensis 路径无效：$makensis" }
-          & $makensis /V2 /DAPP_VERSION=$env:APP_VERSION installer.nsi
+          # /INPUTCHARSET UTF8：即使 BOM 意外丢失也能按 UTF-8 解析，双保险
+          & $makensis /V2 /INPUTCHARSET UTF8 /DAPP_VERSION=$env:APP_VERSION installer.nsi
           if ($LASTEXITCODE -ne 0) { throw "makensis 编译失败（退出码 $LASTEXITCODE）" }
           $setup = "dist/$env:APP_NAME-Setup-$env:APP_VERSION.exe"
           if (-not (Test-Path $setup)) { throw "安装器未生成：$setup" }

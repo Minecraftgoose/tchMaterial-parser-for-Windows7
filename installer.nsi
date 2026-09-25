@@ -1,9 +1,13 @@
-; ==============================================================================
-; tchMaterial-parser-for-Windows7 — NSIS 3.09 安装脚本
+﻿; ==============================================================================
+; tchMaterial-parser-for-Windows7 — NSIS 安装脚本（3.09 及以上均可）
 ; 打包对象：PyInstaller onedir（文件夹模式）产物 dist/tchMaterial-parser-for-Windows7/
-; 编译命令：makensis /V2 /DAPP_VERSION=1.0.0 installer.nsi
+; 编译命令：makensis /V2 /INPUTCHARSET UTF8 /DAPP_VERSION=1.0.0 installer.nsi
 ; 产物：    dist/tchMaterial-parser-for-Windows7-Setup-<version>.exe
-; 依赖：    NSIS 3.09（Unicode），需 nsExec 插件（官方自带）
+; 依赖：    NSIS 3.09+（Unicode），需 nsExec 插件（官方自带）
+;
+; 【编码】本文件必须保存为 UTF-8 **with BOM**（EF BB BF）。
+; makensis 对无 BOM 的脚本按系统 ANSI 代码页解析，中文会全部变成乱码；
+; 有 BOM 才按 UTF-8 解析。/INPUTCHARSET UTF8 是同一问题的第二道保险。
 ; ==============================================================================
 
 !ifndef APP_VERSION
@@ -40,7 +44,13 @@ ShowUninstDetails show
 !define MUI_FINISHPAGE_RUN_TEXT "运行 ${APP_NAME}"
 
 !insertmacro MUI_PAGE_WELCOME
-!insertmacro MUI_PAGE_LICENSE "LICENSE"
+; LICENSE 原文件是 UTF-8 无 BOM（Python 打包要用，不能改），NSIS 读它会乱码。
+; CI 会先生成一份带 BOM 的副本供本页使用；本地直接编译则回退到原文件。
+!if /FileExists "LICENSE.utf8bom.txt"
+  !insertmacro MUI_PAGE_LICENSE "LICENSE.utf8bom.txt"
+!else
+  !insertmacro MUI_PAGE_LICENSE "LICENSE"
+!endif
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
