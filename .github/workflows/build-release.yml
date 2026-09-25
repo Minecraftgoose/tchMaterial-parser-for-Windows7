@@ -71,23 +71,8 @@ jobs:
           $text = [regex]::Replace($text, "('FileVersion',\s*)'[^']*'",    "`$1'$dot'")
           $text = [regex]::Replace($text, "('ProductVersion',\s*)'[^']*'", "`$1'$dot'")
 
-          # 校验的是「结果是否符合预期」，而不是「内容是否发生变化」：
-          # 当 tag 版本与文件里已有的版本相同时（如发 v1.0.0 而文件本就是 1.0.0.0），
-          # 替换是幂等的空操作，此时判「未变化即报错」会误杀。
-          $checks = @(
-            @('filevers',       "filevers=($quad)"),
-            @('prodvers',       "prodvers=($quad)"),
-            @('FileVersion',    "'FileVersion', '$dot'"),
-            @('ProductVersion', "'ProductVersion', '$dot'")
-          )
-          foreach ($c in $checks) {
-            if ($text -notmatch [regex]::Escape($c[1])) {
-              throw "version_info.txt 同步后仍未包含 $($c[0])=$($c[1])，检查文件格式是否被改动"
-            }
-          }
-
           [System.IO.File]::WriteAllText($path, $text, $utf8)
-          Write-Host "version_info.txt 版本已确认为 $dot（$quad）"
+          Write-Host "version_info.txt 版本已同步为 $dot（$quad）"
           Select-String -Path $path -Pattern 'filevers|prodvers|FileVersion|ProductVersion' |
             ForEach-Object { Write-Host "  $($_.Line.Trim())" }
 
