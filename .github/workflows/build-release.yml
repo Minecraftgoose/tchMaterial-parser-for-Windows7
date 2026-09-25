@@ -102,10 +102,21 @@ jobs:
           $root = 'C:\tools\upx'
           New-Item -ItemType Directory -Path $root -Force | Out-Null
 
+          # 显式给超时：Invoke-WebRequest 默认不超时，网络抽风时会把整个 job 挂住
           Write-Host '下载 UPX 4.2.4 (win64)…'
-          Invoke-WebRequest `
-            -Uri 'https://github.com/upx/upx/releases/download/v4.2.4/upx-4.2.4-win64.zip' `
-            -OutFile 'upx.zip' -UserAgent 'Mozilla/5.0' -UseBasicParsing
+          $ok = $false
+          for ($i = 1; $i -le 3 -and -not $ok; $i++) {
+            try {
+              Invoke-WebRequest `
+                -Uri 'https://github.com/upx/upx/releases/download/v4.2.4/upx-4.2.4-win64.zip' `
+                -OutFile 'upx.zip' -UserAgent 'Mozilla/5.0' -UseBasicParsing -TimeoutSec 120
+              $ok = $true
+            } catch {
+              Write-Host "第 $i 次下载失败：$($_.Exception.Message)"
+              Start-Sleep -Seconds 5
+            }
+          }
+          if (-not $ok) { throw 'UPX 下载连续 3 次失败' }
           Expand-Archive -Path 'upx.zip' -DestinationPath $root -Force
 
           $upx = Get-ChildItem -Path $root -Filter 'upx.exe' -Recurse | Select-Object -First 1
@@ -165,39 +176,79 @@ jobs:
             Write-Host "::warning::没有文件被 UPX 压缩，检查 --upx-dir 是否指向 upx.exe 所在目录"
           }
 
-      - name: Install NSIS 3.09
+      - name: Set up NSIS
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $root = 'C:\nsis'
-          try {
-            Write-Host '下载 NSIS 3.09 官方压缩包…'
-            Invoke-WebRequest `
-              -Uri 'https://sourceforge.net/projects/nsis/files/NSIS%203/3.09/nsis-3.09.zip/download' `
-              -OutFile 'nsis-3.09.zip' -UserAgent 'Mozilla/5.0' -MaximumRedirection 5 -UseBasicParsing
-            Expand-Archive -Path 'nsis-3.09.zip' -DestinationPath $root -Force
-          } catch {
-            Write-Host "官方压缩包不可用（$($_.Exception.Message)），回退 chocolatey"
-            choco install nsis --version=3.09 -y --force
+          $minVer = [version]'3.9.0'
+
+          function Find-Makensis {
+            # 直接探测已知安装位置，避免递归扫描整个 Program Files
+            foreach ($c in @(
+              'C:\Program Files (x86)\NSIS\makensis.exe',
+              'C:\Program Files\NSIS\makensis.exe'
+            )) {
+              if (Test-Path $c) { return $c }
+            }
+            return $null
+          }
+          function Get-MakensisVersion([string]$path) {
+            if (-not $path) { return '' }
+            try {
+              $raw = ((& $path /VERSION 2>&1) -join ' ').Trim()
+              # makensis /VERSION 输出形如 "v3.10" 或 "3.09"，统一补齐成三段以便比较
+              if ($raw -match '(\d+(?:\.\d+){1,3})') {
+                $n = $Matches[1]
+                while (($n.Split('.')).Count -lt 3) { $n += '.0' }
+                return [version]$n
+              }
+            } catch {}
+            return $null
           }
 
-          $makensis = Get-ChildItem -Path @(
-            $root,
-            'C:\Program Files (x86)\NSIS',
-            'C:\Program Files\NSIS'
-          ) -Filter 'makensis.exe' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          # 1) GitHub windows-latest 镜像已预装 NSIS（当前为 3.10），直接复用即可
+          #    3.10 编译出的安装器在 Windows 7 上可正常运行，无需强锁 3.09
+          $makensis = Find-Makensis
+          $ver = Get-MakensisVersion $makensis
+          Write-Host "探测结果：$makensis  版本：$ver"
+
+          if ($makensis -and $ver -and $ver -ge $minVer) {
+            Write-Host "复用镜像自带 NSIS $ver，跳过安装（零下载）"
+          } else {
+            # 2) 兜底：仅在镜像没有或版本过低时才装。不再走 sourceforge，
+            #    Chocolatey 套硬超时，避免 community CDN 抽风时无限等待
+            Write-Host "镜像无可用 NSIS，改用 Chocolatey 安装（硬超时 6 分钟）…"
+            $job = Start-Job -ScriptBlock { & choco install nsis --version=3.09 -y --force 2>&1 }
+            Wait-Job $job -Timeout 360 | Out-Null
+            if ($job.State -ne 'Completed') {
+              Receive-Job $job -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_ }
+              Stop-Job $job -Force
+              Remove-Job $job -Force
+              throw 'Chocolatey 安装 NSIS 超过 6 分钟未完成，已中止（多为 CDN 抽风，重跑即可）'
+            }
+            Receive-Job $job | ForEach-Object { Write-Host $_ }
+            Remove-Job $job -Force
+
+            $makensis = Find-Makensis
+            $ver = Get-MakensisVersion $makensis
+          }
+
           if (-not $makensis) { throw '未找到 makensis.exe' }
+          if (-not $ver -or $ver -lt $minVer) { throw "NSIS 版本低于 3.09（实际：$ver）" }
 
-          Add-Content -Path $env:GITHUB_PATH -Value $makensis.DirectoryName
-          $ver = (& $makensis.FullName /VERSION) -join ' '
-          if ($ver -notmatch '3\.09') { throw "NSIS 版本不是 3.09（实际：$ver）" }
-          Write-Host "NSIS ready：$($makensis.FullName) [$ver]"
+          # 同时写 PATH 和绝对路径：后者供后续步骤直接调用，不依赖 PATH 是否即时生效
+          Add-Content -Path $env:GITHUB_PATH -Value (Split-Path $makensis -Parent)
+          Add-Content -Path $env:GITHUB_ENV  -Value "MAKENSIS=$makensis"
+          Write-Host "NSIS ready：$makensis [$ver]"
 
-      - name: Build installer with NSIS 3.09
+      - name: Build installer with NSIS
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          makensis /V2 /DAPP_VERSION=$env:APP_VERSION installer.nsi
+          $makensis = $env:MAKENSIS
+          if (-not $makensis -or -not (Test-Path $makensis)) { throw "makensis 路径无效：$makensis" }
+          & $makensis /V2 /DAPP_VERSION=$env:APP_VERSION installer.nsi
+          if ($LASTEXITCODE -ne 0) { throw "makensis 编译失败（退出码 $LASTEXITCODE）" }
           $setup = "dist/$env:APP_NAME-Setup-$env:APP_VERSION.exe"
           if (-not (Test-Path $setup)) { throw "安装器未生成：$setup" }
           Write-Host "安装器：$(Get-Item $setup | Select-Object -ExpandProperty Length) 字节"
