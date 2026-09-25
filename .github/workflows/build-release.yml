@@ -259,6 +259,37 @@ jobs:
           [System.IO.File]::WriteAllText('LICENSE.utf8bom.txt', [System.IO.File]::ReadAllText('LICENSE'), $utf8bom)
           Write-Host '已生成 LICENSE.utf8bom.txt（供许可证页）'
 
+      - name: Verify NSIS script structure
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          # 1) 欢迎页位图必须存在，否则 MUI 会静默回退到默认图（不报错，只在界面上看不出来）
+          $bmpRel = (Select-String -Path 'installer.nsi' -Pattern 'MUI_WELCOMEFINISHPAGE_BITMAP\s+"([^"]+)"').Matches[0].Groups[1].Value
+          $bmp = $bmpRel -replace '/', '\'
+          if (-not (Test-Path $bmp)) { throw "欢迎页位图缺失：$bmp" }
+          $bytes = [System.IO.File]::ReadAllBytes($bmp)
+          if (-not ($bytes.Length -gt 2 -and $bytes[0] -eq 0x42 -and $bytes[1] -eq 0x4D)) {
+            throw "欢迎页位图不是 BMP（NSIS 不支持 PNG）：$bmp"
+          }
+          Write-Host "欢迎页位图：$bmp（$($bytes.Length) 字节）"
+
+          # 2) MUI_LANGUAGE 必须排在所有 MUI_PAGE_* / MUI_UNPAGE_* 之后，
+          #    否则语言串未注入，欢迎页图片与界面文字会加载失败。
+          #    只统计真正的 !insertmacro 行：注释里也会提到这些名字，不排除会误判。
+          $lines = Get-Content 'installer.nsi' -Encoding UTF8
+          $lastPage = -1
+          $langLine = -1
+          for ($i = 0; $i -lt $lines.Count; $i++) {
+            $code = ($lines[$i] -split '[;#]')[0].Trim()   # 去掉注释
+            if (-not $code.StartsWith('!insertmacro')) { continue }
+            if ($code -match 'MUI_(UN)?PAGE_\w+') { $lastPage = $i }
+            elseif ($code -match 'MUI_LANGUAGE')  { $langLine = $i; break }
+          }
+          if ($langLine -lt 0) { throw '找不到 MUI_LANGUAGE 指令' }
+          if ($langLine -lt $lastPage) { throw "MUI_LANGUAGE（第 $($langLine+1) 行）必须排在所有 MUI_PAGE_*（最后在第 $($lastPage+1) 行）之后" }
+          Write-Host "结构检查通过：MUI_LANGUAGE 在第 $($langLine+1) 行，最后一个页面宏在第 $($lastPage+1) 行"
+
       - name: Build installer with NSIS
         shell: pwsh
         run: |

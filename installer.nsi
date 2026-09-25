@@ -43,6 +43,12 @@ ShowUninstDetails show
 !define MUI_FINISHPAGE_RUN "$INSTDIR\${APP_EXE}"
 !define MUI_FINISHPAGE_RUN_TEXT "运行 ${APP_NAME}"
 
+; 欢迎页 / 完成页左侧位图。必须放在插入 MUI_PAGE_WELCOME 之前才生效。
+; 只用 1 倍图（164x314，官方推荐尺寸，恰好填满），不设 NOSTRETCH：
+; 官方明确说明「恰好填满的整幅位图不要加 NOSTRETCH」，
+; 因为用户自定义 DPI 会改变控件实际尺寸，加了反而在缩放时被裁切/错位。
+!define MUI_WELCOMEFINISHPAGE_BITMAP "assets\welcome_164x314.bmp"
+
 !insertmacro MUI_PAGE_WELCOME
 ; LICENSE 原文件是 UTF-8 无 BOM（Python 打包要用，不能改），NSIS 读它会乱码。
 ; CI 会先生成一份带 BOM 的副本供本页使用；本地直接编译则回退到原文件。
@@ -56,6 +62,9 @@ ShowUninstDetails show
 !insertmacro MUI_PAGE_FINISH
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
+; ⚠ MUI_LANGUAGE 必须排在所有 MUI_PAGE_* / MUI_UNPAGE_* 之后。
+; 放到前面会导致语言字符串未注入，欢迎页位图与界面文字加载失败（常见的白图/缺字坑）。
+; 新增页面时一律插在本行「之前」，不要插到后面。
 !insertmacro MUI_LANGUAGE "SimpChinese"
 
 ; ------------------------------------------------------------------------------
