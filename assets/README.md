@@ -10,6 +10,7 @@
 | `window_icon.png` | 程序运行时的窗口图标（窗口左上角、Alt+Tab，以及主界面标题旁） | `src/tchmaterial_parser/app.py` 直接读取，`tchMaterial-parser-for-Windows7.spec` 负责打包 |
 | `last_quarter_moon_3d.png`、`sun_3d.png`、`crescent_moon_3d.png`、`information_3d.png`、`pushpin_3d.png`、`link_3d.png`、`inbox_tray_3d.png`（来自 [microsoft/fluentui-emoji](https://github.com/microsoft/fluentui-emoji)） | 程序右上角选择主题、关于图标，以及主界面功能说明的四行图标 | `src/tchmaterial_parser/images.py` 直接读取，`tchMaterial-parser-for-Windows7.spec` 负责打包 |
 | `last_quarter_moon_flat.svg`、`sun_flat.svg`、`crescent_moon_flat.svg`、`information_flat.svg`（来自 [microsoft/fluentui-emoji](https://github.com/microsoft/fluentui-emoji)） | 矢量图 | 仅供设计使用，不参与构建 |
+| `welcome_164x314.bmp` | 安装包左侧背景图 | 安装包 |
 
 ## 关于 Emoji 字体
 
