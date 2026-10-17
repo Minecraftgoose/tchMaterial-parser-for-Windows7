@@ -12,4 +12,4 @@ try:
 except PackageNotFoundError:
     # 源码直接运行（未 pip install）时没有包元数据，退回硬编码版本号，避免导入即崩溃。
     # 改动版本号时记得同步 pyproject.toml 里的 version。
-    __version__ = "1.0"
+    __version__ = "4.4+win7"

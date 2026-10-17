@@ -42,14 +42,21 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "tag 不存在于远端：$tag" }
           }
 
-          # 允许 v1.2.0 / V1.2.0 / 1.2.0，统一剥掉前缀
-          $ver = $tag -replace '^[vV]', ''
-          if ($ver -notmatch '^\d+\.\d+\.\d+$') {
-            throw "版本号必须是 X.Y.Z（可带 v 前缀），实际解析出：$ver（来自 tag：$tag）"
-          }
+          # 不校验版本号格式：任何 tag 都可以发布（如 v4.4-win7、v1.0、v2.0-rc1）。
+          # exe 的版本资源必须是四段数字，因此只取 tag 开头的数字主干 X[.Y[.Z[.W]]]，
+          # 后缀里的数字（如 win7、rc1）不参与，不足补 0、多余截断。
+          $ver  = $tag -replace '^[vV]', ''
+          $core = [regex]::Match($ver, '^\d+(?:\.\d+)*').Value
+          $nums = if ($core) { $core.Split('.') } else { @('0') }
 
-          Write-Host "解析版本：$ver"
+          $quad = @($nums + @('0','0','0','0'))[0..3] -join ', '
+          $dot  = @($nums + @('0','0','0','0'))[0..3] -join '.'
+
+          Write-Host "原始 tag：$tag"
+          Write-Host "解析版本：$ver（文件版本四段：$dot）"
           Add-Content -Path $env:GITHUB_ENV  -Value "APP_VERSION=$ver"
+          Add-Content -Path $env:GITHUB_ENV  -Value "APP_VERSION_QUAD=$quad"
+          Add-Content -Path $env:GITHUB_ENV  -Value "APP_VERSION_DOT=$dot"
           Add-Content -Path $env:GITHUB_OUTPUT -Value "version=$ver"
           Add-Content -Path $env:GITHUB_OUTPUT -Value "tag=$tag"
 
@@ -57,10 +64,10 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          # exe 的版本资源来自 version_info.txt，否则不论发什么 tag 都显示 1.0.0.0
-          $ver  = $env:APP_VERSION
-          $quad = ($ver.Split('.') + '0')[0..3] -join ', '
-          $dot  = ($ver.Split('.') + '0')[0..3] -join '.'
+          # exe 的版本资源来自 version_info.txt，否则不论发什么 tag 都显示仓库里写死的版本。
+          # 版本资源只接受四段数字，因此用上一步提取出的数字段，tag 里的其余字符不参与。
+          $quad = $env:APP_VERSION_QUAD
+          $dot  = $env:APP_VERSION_DOT
 
           $path = 'version_info.txt'
           $utf8 = New-Object System.Text.UTF8Encoding($false)   # 无 BOM，与仓库中该文件一致

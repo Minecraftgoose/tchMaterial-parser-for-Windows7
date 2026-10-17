@@ -83,6 +83,12 @@ def detect_system_theme() -> Literal["light", "dark"]: # 获取系统当前使�
     # 因此跟随系统时一律按浅色模式处理，用户仍可点右上角的按钮手动切到深色
     return "light"
 
+def apply_titlebar_theme(window: tk.Tk | tk.Toplevel) -> None: # 让标题栏跟随窗口内部的深浅色
+    # 上游靠 DWMWA_USE_IMMERSIVE_DARK_MODE（Windows 10 1809+）改标题栏配色，
+    # Windows 7 的 dwmapi 没有这个属性，调用必然失败，因此这里什么都不做，
+    # 标题栏保持系统外观，窗口内部仍会跟随主题切换。
+    return
+
 def register_themed_widget(widget: tk.Widget) -> None: # 登记需要跟随主题手动调整配色的 tk 原生控件（ttk 控件由主题自动处理），并立即应用当前配色
     themed_widgets.add(widget)
     widget.bind("<Destroy>", lambda _event: themed_widgets.discard(widget), add="+")

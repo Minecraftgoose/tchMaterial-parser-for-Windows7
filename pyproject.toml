@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tchMaterial-parser-for-Windows7"
-version = "1.0"
+version = "4.4+win7"
 description = "国家中小学智慧教育平台 资源下载工具"
 readme = "README.md"
 requires-python = ">=3.8,<3.9"

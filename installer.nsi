@@ -1,7 +1,7 @@
 ﻿; ==============================================================================
 ; tchMaterial-parser-for-Windows7 — NSIS 安装脚本（3.09 及以上均可）
 ; 打包对象：PyInstaller onedir（文件夹模式）产物 dist/tchMaterial-parser-for-Windows7/
-; 编译命令：makensis /V2 /INPUTCHARSET UTF8 /DAPP_VERSION=1.0.0 installer.nsi
+; 编译命令：makensis /V2 /INPUTCHARSET UTF8 /DAPP_VERSION=4.4-win7 installer.nsi
 ; 产物：    dist/tchMaterial-parser-for-Windows7-Setup-<version>.exe
 ; 依赖：    NSIS 3.09+（Unicode），需 nsExec 插件（官方自带）
 ;
@@ -11,7 +11,7 @@
 ; ==============================================================================
 
 !ifndef APP_VERSION
-  !define APP_VERSION "1.0.0"
+  !define APP_VERSION "4.4-win7"
 !endif
 
 !define APP_NAME      "国家中小学智慧教育平台 资源下载工具"

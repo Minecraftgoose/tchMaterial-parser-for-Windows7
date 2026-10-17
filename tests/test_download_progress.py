@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import unittest
 from unittest.mock import patch
 
@@ -54,7 +53,7 @@ class DownloadProgressTest(unittest.TestCase):
     def latest_label_text(self) -> str:
         return self.label.configs[-1]["text"]
 
-    def test_shows_percentage_when_total_size_known(self) -> None:
+    def test_summary_counts_finished_tasks_instead_of_mixing_file_sizes(self) -> None:
         download_panel.download_states = [
             {"downloaded_size": 50, "total_size": 100, "finished": True, "failed_reason": None},
             {"downloaded_size": 50, "total_size": 100, "finished": False, "failed_reason": None},
@@ -62,8 +61,8 @@ class DownloadProgressTest(unittest.TestCase):
 
         download_panel.refresh_download_progress()
 
-        self.assertIn("50.00%", self.latest_label_text())
-        self.assertIn("已下载 1/2", self.latest_label_text())
+        self.assertIn("已结束 1/2", self.latest_label_text())
+        self.assertIn("已完成 1", self.latest_label_text())
         self.assertEqual(self.bar.configs[-1], {"value": 50.0})
 
     def test_shows_finished_count_without_total_size(self) -> None:
@@ -74,8 +73,8 @@ class DownloadProgressTest(unittest.TestCase):
 
         download_panel.refresh_download_progress()
 
-        self.assertIn("已完成 1/2 个文件", self.latest_label_text())
-        self.assertEqual(self.bar.configs, []) # 未知总大小时不驱动进度条
+        self.assertIn("已结束 1/2", self.latest_label_text())
+        self.assertEqual(self.bar.configs[-1], {"value": 50.0})
 
     def test_counts_failed_downloads(self) -> None:
         download_panel.download_states = [
@@ -85,7 +84,8 @@ class DownloadProgressTest(unittest.TestCase):
 
         download_panel.refresh_download_progress()
 
-        self.assertIn("1 个失败", self.latest_label_text())
+        self.assertIn("下载失败 1", self.latest_label_text())
+        self.assertNotIn("已完成", self.latest_label_text())
 
     def test_private_download_requests_carry_timeout(self) -> None:
         fake_session = TimeoutRecordingSession()

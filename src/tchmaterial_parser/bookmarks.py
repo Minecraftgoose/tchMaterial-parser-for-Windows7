@@ -46,4 +46,5 @@ def add_bookmarks(pdf_path: str, chapters: list[dict]) -> None: # 给 PDF 添加
             writer.write(f)
 
     except Exception as e:
-        print_error(e)
+        # 交由下载任务记录失败；否则损坏或未写完的 PDF 会被当作成功文件发布。
+        raise RuntimeError(f"写入 PDF 书签失败：{e}") from e

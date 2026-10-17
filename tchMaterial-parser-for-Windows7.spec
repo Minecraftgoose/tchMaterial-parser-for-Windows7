@@ -18,7 +18,8 @@ a = Analysis(
     binaries=[],
     datas=data_files,
     # Pillow 的 _imagingtk 通过 C 层动态导入，PyInstaller 无法静态发现
-    hiddenimports=["PIL._tkinter_finder"],
+    # download_manager 只在打开下载管理窗口时才被导入，显式列出以免静态分析漏掉
+    hiddenimports=["PIL._tkinter_finder", "tchmaterial_parser.ui.download_manager"],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

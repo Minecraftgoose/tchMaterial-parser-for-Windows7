@@ -7,6 +7,10 @@ from __future__ import annotations
 import sys, traceback
 from pathlib import Path
 
+# 本分支只支持 Windows 7，因此操作系统类型是一个常量而非运行时探测的结果。
+# 提供 os_name 是为了让同步自上游的模块（如 ui/download_manager.py）无需改写分支判断。
+os_name = "Windows"
+
 def print_error(e: Exception) -> None: # 打印错误信息到控制台
     if sys.stderr: # 无控制台运行时 sys.stderr 可能为 None
         traceback.print_exception(e)
