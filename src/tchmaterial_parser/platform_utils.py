@@ -13,7 +13,9 @@ os_name = "Windows"
 
 def print_error(e: Exception) -> None: # 打印错误信息到控制台
     if sys.stderr: # 无控制台运行时 sys.stderr 可能为 None
-        traceback.print_exception(e)
+        # 必须显式传三个位置参数：Python 3.8 的 traceback.print_exception(etype, value, tb)
+        # 三个都是必填的，到 3.10 才允许只传异常对象。本分支跑在 3.8 上，写成 print_exception(e) 会抛 TypeError。
+        traceback.print_exception(type(e), e, e.__traceback__)
 
 def resource_path(*parts: str) -> Path: # 获取源码或 PyInstaller 打包后的只读资源路径
     bundle_root = getattr(sys, "_MEIPASS", None)

@@ -15,6 +15,13 @@
 
 由于 3.8 没有 PEP 604 的运行时支持（不支持 `str | None` 这种写法），所有模块顶部都带 `from __future__ import annotations`，让注解以字符串形式保留、永不求值。**新增模块时务必照抄这一行**，并且不要在运行时（非注解位置）使用 `X | Y` 或 `list[str]` 等下标泛型。
 
+> ⚠️ 上面的规则只覆盖**语法**。真正危险的是标准库 API 的版本差异——它们在语法上完全合法，本地用 3.10+ 开发时也不会报错，只有到 3.8 上才会炸。已经踩过的坑：
+> - `traceback.print_exception(e)`：3.8 的签名是 `(etype, value, tb)`，三个位置参数全部必填，3.10 起才允许只传异常对象。必须写成 `traceback.print_exception(type(e), e, e.__traceback__)`。
+>
+> 同理要避开 `str.removeprefix/removesuffix`、`functools.cache`、`math.lcm`、`zoneinfo`、`graphlib`、`typing.Annotated`（3.9+）以及 `int.bit_count`、`itertools.pairwise`、`inspect.get_annotations`（3.10+）。
+>
+> 从上游同步代码后，**务必在 3.8 上跑一次 `python -m pytest tests`**（CI 用的就是 3.8.10），不要只看本地新版解释器的结果。
+
 ```sh
 # 克隆项目
 git clone https://github.com/Minecraftgoose/tchMaterial-parser-for-Windows7.git
